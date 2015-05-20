@@ -1,2 +1,4 @@
-# predMachLearning
+# machineLearning
 This repo is part of the Coursera Machine Learning Course.  Multiple models with cross validation are tested.
+Please view the Rmd file to read the report.
+
