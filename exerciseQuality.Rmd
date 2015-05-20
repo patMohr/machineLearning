@@ -81,7 +81,7 @@ When we look at the results we find that the Out Of Box error rate is only 1.44%
 
 **In sample results for Random Forest with full variable set** 
 
-<img src="https://github.com/patMohr/machineLearning/tree/master/images/A.jpg"/>
+<img src="https://github.com/patMohr/machineLearning/blob/master/images/A.jpg"/>
 
 #### Random Forest B: *select* variable set
 In order to prevent overfitting, we take all variables where Overall Importance is greater than 10% and only use these variables on a second data set to fit a less complicated model.
@@ -102,7 +102,7 @@ The OOB (Out of Box) error on the second model is 2.23%.  Which is not suprising
 
 **In sample results for "pruned" Random Forest with restricted variable set** 
 
-<img src="https://github.com/patMohr/machineLearning/tree/master/images/B.jpg"/>
+<img src="https://github.com/patMohr/machineLearning/blob/master/images/B.jpg"/>
 
 #### Random Forest models Out of Sample Results
 However the ultimate test of the model is performance on the test set.  The code below analyzes both models on the test set.
@@ -119,11 +119,11 @@ confusionMatrix(predB,test$classe)
 
 **Out of sample results for Random Forest Model A**
 
-<img src="https://github.com/patMohr/machineLearning/tree/master/images/C.jpg"/>
+<img src="https://github.com/patMohr/machineLearning/blob/master/images/C.jpg"/>
 
 **Out of sample results for Random Forest Model B**
 
-<img src="https://github.com/patMohr/machineLearning/tree/master/images/D.jpg"/>
+<img src="https://github.com/patMohr/machineLearning/blob/master/images/D.jpg"/>
 
 Accuracy of the model A was 0.9878, while the accuracy of model B was 0.9771.  Both models did an excellent job of forecasting the "classe" variable but the original model actually performed better in out of sample than the "pruned" model.
 
@@ -138,7 +138,7 @@ confusionMatrix(predgmb,test$classe)
 ```
 **Out of sample results for GBM Model**
 
-<img src="https://github.com/patMohr/machineLearning/tree/master/images/E.jpg"/>
+<img src="https://github.com/patMohr/machineLearning/blob/master/images/E.jpg"/>
 
 Out of sample accuracy of the model was 0.9587, excellent performance but not as strong as the two random forest models.
 
