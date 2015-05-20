@@ -1,0 +1,151 @@
+---
+title: "Machine Learning Applications to Categorize Exercise Quality"
+author: "Patrick Mohr"
+date: "19 May, 2015"
+output: html_document
+---
+### Background
+The goal of this project is to use the data provided by the HAR group (Human Activity Recognition) to build a machine learning algorithm that will help predict the quality of exercises on a 5 class scale using body measurements from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.  (Details on the data can be found here:http://groupware.les.inf.puc-rio.br/har.)
+
+We will use a training set to build models and a test set to observe out of sample error.  In this report we test two random forest models and one BGM model.
+
+Out of sample results were excellent for all models but ultimately we recommend a random forest model with the full variable data set.
+
+Out of sample error rate for our selected model was only 1.22%.  The out of sample 95% confidence interval for our selected model is (0.9846,.9904).
+
+### Preparing the data for analysis
+First load the data, required libraries and set the seed.
+```{r,eval=FALSE}
+library(caret)
+set.seed(1234)
+training=read.csv("pml-training.csv",stringsAsFactors=F,na.strings=c("#DIV/0!","","NA"))
+```
+
+The data requires some cleaning.  Many fields contain a disproportionate number of NA values.  It is important to understand which fields should be deleted and remove them.  We also checked for near zero variance.
+
+```{r,eval=FALSE}
+NApct=function(x)length(x[is.na(x)])/length(x)
+NaCheck=apply(training,2,NApct)
+table(NaCheck)
+# It looks like .97 is the cutoff.  Delete fields with more than 97% NA values.
+NACols=names(NaCheck[NaCheck>.97])
+# we also want to eliminate administrative fields
+admin=c("X","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","new_window","num_window","user_name")
+#define training2 as our data set after deleting NA columns
+training2=training[,names(training) %in% c(NACols,admin)==F]
+
+# check for near zero variance
+nzv <- nearZeroVar(training2[,-1], saveMetrics = TRUE)
+# nothing fields appear to be near zero variance so no further fields to dete.
+nrow(nzv[nzv$zeroVar==TRUE,])
+
+# factorize the "classe" field
+training2$classe=factor(training2$classe)
+```
+
+### Partition the Data for Cross Validation
+Next step is to partition the data in to two training sets (trainingA and trainingB) and a single out of sample test set (test).
+
+```{r,eval=FALSE}
+# Partition to the data in to two training sets and one test set
+inTrainingA=createDataPartition(y=training2$classe,p=.4,list=FALSE)
+trainingA=training2[inTrainingA,]
+notTrainingA=training2[-inTrainingA,]
+inTrainingB=createDataPartition(y=notTrainingA$classe,p=.5,list=FALSE)
+trainingB=notTrainingA[inTrainingB,]
+test=notTrainingA[-inTrainingB,]
+```
+
+### Random Forest Model Approach
+We will be implementing random forest model to build an algorithm to categorize the quality of exercise using the remaining 52 fields of data.  Random Forest is a very strong machine learning algorithm for building decision trees for classification.  
+
+Often cited strengths of the approach include:
+
+1. Considered one of the most accurate algorithms available in machine learning
+2. Can easily handle a large number of variables
+3. Provides estimates of which variables are important for classification
+4. Can run on large database
+
+However one of the most common criticisms of randome forest is that it may overfit models.  Therefore our strategy is to use part of the training data to build a random forest model and then use a subset of the most important variables on another training set to build a model using fewer variables.
+
+#### Random Forest A: full variable set
+The code below runs the first model.  
+
+```{r,eval=FALSE}
+# use code below to actually build the first random forest model
+rfA<-train(classe ~ ., data=trainingA, method="rf")
+print(rfA$finalModel)
+```
+
+When we look at the results we find that the Out Of Box error rate is only 1.44%:
+
+**In sample results for Random Forest with full variable set** 
+
+<img src="https://github.com/patMohr/predMachLearning/blob/master/images/A.jpg"/>
+
+#### Random Forest B: *select* variable set
+In order to prevent overfitting, we take all variables where Overall Importance is greater than 10% and only use these variables on a second data set to fit a less complicated model.
+
+```{r,eval=FALSE}
+trainImportance=varImp(rfA)
+plot(trainImportance)
+trainImportance=data.frame(var=row.names(trainImportance$importance),importance=trainImportance$importance,stringsAsFactors=F)
+trainImportance=trainImportance[order(-trainImportance$Overall),]
+#List of the most important fields
+above10=trainImportance[trainImportance$Overall>10,"var"]
+#rerun a second model using only the most important variables
+rfB<-train(classe ~ ., data=trainingB[,c("classe",above10)], method="rf")
+print(rfB$finalModel)
+```
+
+The OOB (Out of Box) error on the second model is 2.23%.  Which is not suprising given that we gave the model less variables to work with, however we have the advantage that we may be avoiding overfitting:
+
+**In sample results for "pruned" Random Forest with restricted variable set** 
+
+<img src="https://github.com/patMohr/predMachLearning/blob/master/images/B.jpg"/>
+
+#### Random Forest models Out of Sample Results
+However the ultimate test of the model is performance on the test set.  The code below analyzes both models on the test set.
+
+```{r,eval=FALSE}
+#Compare the models to the test data
+#original model A
+predA <- predict(rfA,test)
+confusionMatrix(predA,test$classe)
+#pruned model B
+predB <- predict(rfB,test)
+confusionMatrix(predB,test$classe)
+```
+
+**Out of sample results for Random Forest Model A**
+
+<img src="https://github.com/patMohr/predMachLearning/blob/master/images/C.jpg"/>
+
+**Out of sample results for Random Forest Model B**
+
+<img src="https://github.com/patMohr/predMachLearning/blob/master/images/D.jpg"/>
+
+Accuracy of the model A was 0.9878, while the accuracy of model B was 0.9771.  Both models did an excellent job of forecasting the "classe" variable but the original model actually performed better in out of sample than the "pruned" model.
+
+### GBM Model Approach
+We also ran a GBM model to get a different perspective.
+
+```{r,eval=FALSE}
+# run the gbm model
+gmbFit <- train(classe ~ ., method="gbm",data=trainingA,verbose=FALSE)
+predgmb <- predict(gmbFit,test)
+confusionMatrix(predgmb,test$classe)
+```
+**Out of sample results for GBM Model**
+
+<img src="https://github.com/patMohr/predMachLearning/blob/master/images/E.jpg"/>
+
+Out of sample accuracy of the model was 0.9587, excellent performance but not as strong as the two random forest models.
+
+### Conclusions
+Based on the out of sample results we believe that the **first random forest model that used the full variable data set** should be the preferred model.  Although we were concerned about overfitting, the model actually outperformed the model that deliberately focused only on the most important variables.  
+
+In terms of our expected performance of the model, **out of sample error rate for our selected model was only 1.22%.**  The out of sample 95% confidence interval for our selected model is (0.9846,.9904).
+
+
+
