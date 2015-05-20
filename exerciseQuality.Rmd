@@ -140,7 +140,7 @@ confusionMatrix(predgmb,test$classe)
 
 <img src="https://github.com/patMohr/machineLearning/blob/master/images/E.jpg"/>
 
-Out of sample accuracy of the model was 0.9587, excellent performance but not as strong as the two random forest models.
+Out of sample accuracy of the model was 0.9587, excellent performance but not as strong as the two random forest models.  
 
 ### Conclusions
 Based on the out of sample results we believe that the **first random forest model that used the full variable data set** should be the preferred model.  Although we were concerned about overfitting, the model actually outperformed the model that deliberately focused only on the most important variables.  
